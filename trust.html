@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>text.html｜高中生版 信任方程式自我評量（逐題版）</title>
+  <meta name="description" content="逐題作答、隱藏向度名稱；完成後在頁面最下方計算分數、匯出CSV、列印PDF。可直接部署 GitHub Pages，檔名 text.html。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <style>
+    :root{--bg:#0b1020;--card:#121a33;--ink:#eaf1ff;--sub:#c6d2ff;--accent:#89b4ff;--muted:#7f8cab}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b1020 0%,#0e1630 100%);color:var(--ink);font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:900px;margin:auto;padding:24px}
+    header{display:flex;gap:14px;align-items:center;margin-bottom:6px}
+    .logo{width:36px;height:36px;border-radius:12px;background:radial-gradient(120% 120% at 10% 10%, #89b4ff 0%, #6ee7b7 40%, #121a33 70%);box-shadow:0 0 24px #89b4ff33}
+    h1{margin:0;font-size:clamp(18px,3.2vw,26px)}
+    .card{background:rgba(18,26,51,.82);backdrop-filter:blur(8px);border:1px solid #2b3564;border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
+    .section-title{font-weight:700;margin:0 0 8px;font-size:18px}
+    .hint{color:var(--sub);font-size:14px;line-height:1.6}
+    .progress{display:flex;align-items:center;justify-content:space-between;color:var(--sub);font-size:14px;margin-top:6px}
+    .qwrap{display:grid;gap:14px;margin-top:12px}
+    .qbox{padding:16px;border-radius:16px;border:1px solid #28325f}
+    .scale{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{position:relative}
+    .pill input{appearance:none;position:absolute;inset:0;width:100%;height:100%;opacity:0}
+    .pill label{display:inline-block;min-width:36px;padding:10px 12px;border-radius:999px;border:1px solid #2a3566;color:var(--sub);text-align:center;cursor:pointer;user-select:none;font-size:14px}
+    .pill input:checked + label{border-color:var(--accent);color:var(--ink);box-shadow:0 0 0 2px #89b4ff55 inset}
+    .nav{display:flex;gap:10px;justify-content:space-between;margin-top:8px}
+    button{background:#233269;color:var(--ink);border:1px solid #2e3d73;padding:11px 16px;border-radius:12px;cursor:pointer;transition:.2s;font-weight:700}
+    button:hover{filter:brightness(1.08)}
+    button.primary{background:linear-gradient(180deg,#446be7,#3758d6);border-color:#3f5fe0}
+    button.ghost{background:transparent}
+    .results{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
+    @media(min-width:900px){.results{grid-template-columns:1.2fr .8fr}}
+    .kpi{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .k{background:#0f1734;border:1px solid #28325f;border-radius:16px;padding:14px}
+    .k h3{margin:0 0 6px;font-size:14px;color:var(--sub)}
+    .k .n{font-size:24px;font-weight:800}
+    footer{margin:18px 0 80px;color:var(--muted);font-size:13px}
+    .actions-bottom{position:relative;margin-top:20px}
+    .actions-bottom .bar{position:sticky;bottom:0;background:rgba(11,16,32,.9);backdrop-filter:blur(6px);border:1px solid #2b3564;border-radius:16px;padding:12px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo" aria-hidden="true"></div>
+      <h1>高中生版｜信任方程式自我評量（逐題版）</h1>
+    </header>
+
+    <section class="card" aria-labelledby="introTitle">
+      <h2 id="introTitle" class="section-title">作答方式</h2>
+      <p class="hint">本版一次呈現<strong>一題</strong>；請依生活情境為每題打 <strong>1–5 分</strong>。1=完全不符合、2=偶爾符合、3=有時符合、4=大多符合、5=非常符合。所有資料僅儲存在你的裝置（LocalStorage）。</p>
+      <div class="progress"><span id="pText">第 1 / 12 題</span><span id="pPercent">0%</span></div>
+    </section>
+
+    <main class="card qwrap" aria-live="polite">
+      <div id="qBox" class="qbox">
+        <p id="qText" style="margin:0;font-size:18px;line-height:1.7"></p>
+        <div id="qScale" class="scale" role="radiogroup" aria-label="題目評分"></div>
+        <div class="nav">
+          <button id="prevBtn" class="ghost">← 上一題</button>
+          <button id="nextBtn" class="primary">下一題 →</button>
+        </div>
+      </div>
+    </main>
+
+    <section id="resultSection" class="results" hidden>
+      <div class="card">
+        <h2 class="section-title">結果與分析</h2>
+        <div class="kpi" role="group" aria-label="各構面分數">
+          <div class="k"><h3>可信度（C）</h3><div class="n" id="scoreC">—</div></div>
+          <div class="k"><h3>可靠度（R）</h3><div class="n" id="scoreR">—</div></div>
+          <div class="k"><h3>親近度（I）</h3><div class="n" id="scoreI">—</div></div>
+          <div class="k"><h3>自我利益導向（SO）</h3><div class="n" id="scoreSO">—</div></div>
+        </div>
+        <div class="k" style="margin-top:12px">
+          <h3>總分（四構面合計）</h3>
+          <div class="n" id="scoreTotal">—</div>
+        </div>
+        <p class="hint" id="summaryHint" style="margin-top:8px"></p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">雷達圖</h2>
+        <canvas id="radar" aria-label="四構面雷達圖" role="img"></canvas>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2 class="section-title">反思紀錄</h2>
+      <textarea id="reflection" rows="6" style="width:100%;border-radius:14px;border:1px solid #28325f;background:#0f1734;color:var(--ink);padding:12px" placeholder="寫下 2–3 個你會採取的具體行動……（僅存本機）"></textarea>
+    </section>
+
+    <div class="actions-bottom">
+      <div class="bar">
+        <button id="calcBtn" class="primary" aria-describedby="calcHelp">計算分數</button>
+        <button id="resetBtn" class="ghost">全部清除</button>
+        <button id="printBtn">列印 / 存 PDF</button>
+        <button id="csvBtn" class="ghost">匯出 CSV</button>
+        <button id="downloadBtn" title="下載本頁原始碼為 text.html">下載 text.html</button>
+      </div>
+    </div>
+
+    <footer>
+      <div>隱私：本工具只在你的瀏覽器運作，資料僅存於本機（LocalStorage）。</div>
+      <div style="margin-top:6px">部署：將此檔另存為 <strong>text.html</strong> 上傳到 GitHub Pages 即可公開使用。</div>
+    </footer>
+  </div>
+
+  <script>
+  // ====== 題庫（隱藏向度名稱；但內部保留 key 以便計分） ======
+  const FORM = [
+    {key:'C', text:'我在表達想法或報告時，能清楚、誠懇地說明，讓同學覺得我值得相信。'},
+    {key:'C', text:'我不隨便承諾自己做不到的事。'},
+    {key:'C', text:'當我不知道答案時，我會誠實承認，而不是亂掰或硬裝懂。'},
+    {key:'R', text:'我答應的事情會在期限內完成。'},
+    {key:'R', text:'我的行動通常和我說的話一致。'},
+    {key:'R', text:'就算事情很瑣碎（例如帶東西、交資料），我也會確實完成。'},
+    {key:'I', text:'我的同學/朋友願意和我分享心事，因為覺得我值得信任。'},
+    {key:'I', text:'我會傾聽並保護別人的隱私，不隨便把他人秘密說出去。'},
+    {key:'I', text:'當同學情緒不好時，我願意主動關心，讓對方感覺被理解。'},
+    {key:'SO',text:'在團隊中，我會在意團隊是否成功，而不只關心自己的得失。'},
+    {key:'SO',text:'當事情成功時，我樂於與大家分享成果與功勞。'},
+    {key:'SO',text:'在討論時，我願意耐心傾聽別人的想法，再分享自己的意見。'},
+  ];
+
+  const TOTAL = FORM.length;
+  let idx = 0; // 目前題號 0-based
+  const $ = (s,root=document)=>root.querySelector(s);
+  const $$ = s=>Array.from(document.querySelectorAll(s));
+
+  function renderScale(name, savedVal){
+    return [1,2,3,4,5].map(v => `
+      <div class="pill">
+        <input type="radio" name="${name}" id="${name}_${v}" value="${v}" ${savedVal==v? 'checked':''} aria-label="${v}分">
+        <label for="${name}_${v}">${v}</label>
+      </div>`).join('');
+  }
+
+  function updateProgress(){
+    $('#pText').textContent = `第 ${idx+1} / ${TOTAL} 題`;
+    $('#pPercent').textContent = `${Math.round(((idx)/TOTAL)*100)}%`;
+  }
+
+  function renderQuestion(){
+    const q = FORM[idx];
+    $('#qText').textContent = q.text;
+    const name = `Q_${idx+1}`;
+    const saved = JSON.parse(localStorage.getItem('trustFormOneByOne')||'{}');
+    const savedVal = saved[name] || null;
+    $('#qScale').innerHTML = renderScale(name, savedVal);
+    $('#prevBtn').disabled = idx===0;
+    $('#nextBtn').textContent = idx===TOTAL-1 ? '完成作答 →' : '下一題 →';
+    updateProgress();
+  }
+
+  function saveCurrent(){
+    const name = `Q_${idx+1}`;
+    const checked = $(`input[name=${name}]:checked`);
+    if(!checked) return false;
+    const store = JSON.parse(localStorage.getItem('trustFormOneByOne')||'{}');
+    store[name] = Number(checked.value);
+    localStorage.setItem('trustFormOneByOne', JSON.stringify(store));
+    return true;
+  }
+
+  function goNext(){
+    if(!saveCurrent()) { alert('請先選擇 1–5 分'); return; }
+    if(idx < TOTAL-1){ idx++; renderQuestion(); }
+    else { window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
+  }
+  function goPrev(){ if(idx>0){ saveCurrent(); idx--; renderQuestion(); } }
+
+  function collectScores(){
+    const store = JSON.parse(localStorage.getItem('trustFormOneByOne')||'{}');
+    const out = {C:[],R:[],I:[],SO:[]};
+    for(let i=0;i<TOTAL;i++){
+      const name = `Q_${i+1}`;
+      const v = store[name];
+      if(typeof v==='number'){ out[FORM[i].key].push(v); }
+    }
+    const missing = Object.keys(store).length===TOTAL ? [] : FORM.map((_,i)=>`Q_${i+1}`).filter(n=>!(n in store));
+    return {out, missing};
+  }
+
+  function sum(a){return a.reduce((s,v)=>s+v,0)}
+  function avg(a){return (a.length? (sum(a)/a.length):0)}
+
+  let radarChart;
+  function updateChart(scores){
+    const ctx = document.getElementById('radar');
+    const data = {labels:['C','R','I','SO'],datasets:[{label:'平均分（1–5）',data:[scores.C.avg,scores.R.avg,scores.I.avg,scores.SO.avg],fill:true}]};
+    const options = {responsive:true, scales:{r:{suggestedMin:1,suggestedMax:5,ticks:{stepSize:1}}}};
+    if(radarChart){ radarChart.data = data; radarChart.update(); }
+    else { radarChart = new Chart(ctx, {type:'radar', data, options}); }
+  }
+
+  function calculate(){
+    const {out, missing} = collectScores();
+    if(missing.length){ alert('還有未作答的題目，請完成 12 題後再計算。'); return; }
+    const scores = {
+      C:{sum:sum(out.C), avg:Number(avg(out.C).toFixed(2))},
+      R:{sum:sum(out.R), avg:Number(avg(out.R).toFixed(2))},
+      I:{sum:sum(out.I), avg:Number(avg(out.I).toFixed(2))},
+      SO:{sum:sum(out.SO),avg:Number(avg(out.SO).toFixed(2))},
+    };
+    const total = scores.C.sum + scores.R.sum + scores.I.sum + scores.SO.sum; // 12~60
+    document.getElementById('scoreC').textContent = `${scores.C.sum}（${scores.C.avg}）`;
+    document.getElementById('scoreR').textContent = `${scores.R.sum}（${scores.R.avg}）`;
+    document.getElementById('scoreI').textContent = `${scores.I.sum}（${scores.I.avg}）`;
+    document.getElementById('scoreSO').textContent= `${scores.SO.sum}（${scores.SO.avg}）`;
+    document.getElementById('scoreTotal').textContent = `${total} / 60`;
+    const tone = total>=48? '非常穩健，請持續以具體行動累積信任。' : total>=36? '不錯！找出較低的構面，設 1–2 個改進行動。' : '建議先從 1–2 個日常行為做起，慢慢提升四構面。';
+    document.getElementById('summaryHint').textContent = `你的總分是 ${total}/60。${tone}`;
+    document.getElementById('resultSection').hidden = false;
+    updateChart(scores);
+  }
+
+  function exportCSV(){
+    const {out, missing} = collectScores();
+    if(missing.length){ alert('請先完成所有題目並計算，再匯出 CSV'); return; }
+    const rows = [['構面','題次','分數']];
+    let c=0,r=0,i=0,s=0;
+    FORM.forEach((q,idx)=>{
+      const name = `Q_${idx+1}`;
+      const v = JSON.parse(localStorage.getItem('trustFormOneByOne')||'{}')[name];
+      const n = (q.key==='C'? ++c : q.key==='R'? ++r : q.key==='I'? ++i : ++s);
+      rows.push([q.key, n, v]);
+    });
+    const total = rows.slice(1).reduce((acc,cur)=> acc + Number(cur[2]), 0);
+    rows.push(['TOTAL','—', total]);
+    const csv = rows.map(r=>r.join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'trust-checklist.csv'; a.click(); URL.revokeObjectURL(url);
+  }
+
+  function resetAll(){
+    localStorage.removeItem('trustFormOneByOne');
+    localStorage.removeItem('trustReflection');
+    idx = 0; renderQuestion();
+    document.getElementById('reflection').value = '';
+    document.getElementById('resultSection').hidden = true;
+    if(window.radarChart){ radarChart.destroy(); radarChart=null; }
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  // 下載目前頁面為 text.html（方便直接放到 GitHub）
+  function downloadSelf(){
+    const html = document.documentElement.outerHTML.replace('<title>','<title>text.html｜');
+    const blob = new Blob([html], {type:'text/html;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'text.html'; a.click(); URL.revokeObjectURL(url);
+  }
+
+  // 綁定
+  document.getElementById('nextBtn').addEventListener('click', goNext);
+  document.getElementById('prevBtn').addEventListener('click', goPrev);
+  document.getElementById('calcBtn').addEventListener('click', calculate);
+  document.getElementById('csvBtn').addEventListener('click', exportCSV);
+  document.getElementById('resetBtn').addEventListener('click', resetAll);
+  document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+  document.getElementById('downloadBtn').addEventListener('click', downloadSelf);
+  document.getElementById('reflection').addEventListener('input', e=> localStorage.setItem('trustReflection', e.target.value));
+
+  // 初始化
+  renderQuestion();
+  document.getElementById('reflection').value = localStorage.getItem('trustReflection')||'';
+  </script>
+</body>
+</html>
